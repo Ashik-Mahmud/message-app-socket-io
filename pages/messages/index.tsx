@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { BiCopy } from "react-icons/bi";
 import { io } from "socket.io-client";
 import MessageBody from "../../components/MessageBody";
+import { serverUrl } from "../../config/config";
 import { useAppSelector } from "../../store/store";
 type Props = {};
-const socket = io("https://message-app-soket-io.onrender.com");
+const socket = io(serverUrl);
 
 const Messages = (props: Props) => {
   const [yourName, setYourName] = useState("");
@@ -36,6 +37,7 @@ const Messages = (props: Props) => {
 
     if (yourName && roomId) {
       socket.emit("join_room", { roomId, yourName });
+      socket.emit("notify_join", { roomId, yourName });
       setIsJoin(true);
     } else {
       cogoToast.error("Please enter your name and room id", {
@@ -47,6 +49,7 @@ const Messages = (props: Props) => {
   /* handle leave room */
   const handleLeaveRoom = () => {
     socket.emit("leave_room", { roomId, yourName });
+    socket.emit("notify_leave", { roomId, yourName });
     setIsJoin(false);
   };
 
@@ -54,9 +57,18 @@ const Messages = (props: Props) => {
     /* create random Room ID */
     const randomRoomId = Math.random().toString(36).substring(2, 8);
     setRoomId(randomRoomId);
+
+    return () => {
+      socket.off("notify_join");
+      socket.off("notify_leave");
+    };
   }, []);
 
-  socket.emit("get_joined_users", { roomId });
+  /* get unique users */
+  const uniqueUsers = joinedUserList.filter(
+    (item: any, index: any) =>
+      joinedUserList.findIndex((i: any) => i.userId === item.userId) === index
+  );
 
   return (
     <>
@@ -72,8 +84,8 @@ const Messages = (props: Props) => {
           </p>
 
           <div className="message-container my-5">
-            <div className="grid grid-cols-1 sm:grid-cols-6  items-stretch gap-5">
-              <div className="join-form bg-white p-5 sm:col-span-1 order-3 sm:order-1 ">
+            <div className="grid grid-cols-1  md:grid-cols-6  items-stretch gap-5">
+              <div className="join-form bg-white p-5 md:col-span-1 order-3 md:order-1 ">
                 <div className="join-form__header">
                   <h3 className="text-2xl font-medium">Join a room</h3>
                   <p className="text-gray-400">Join a room to start chatting</p>
@@ -154,7 +166,7 @@ const Messages = (props: Props) => {
                 </div>
               </div>
 
-              <div className="p-5 bg-white sm:col-span-2 order-2 sm:order-2">
+              <div className="p-5 bg-white md:col-span-2 order-2 md:order-2">
                 <div className="room-details">
                   <h3 className="text-xl font-medium mb-3">Room Details</h3>
                   <ul className="border p-3 flex flex-col items-start gap-3">
@@ -198,30 +210,30 @@ const Messages = (props: Props) => {
                 <div className="users mt-5 border p-4">
                   <h3 className="text-xl font-bold">Participate Users</h3>
 
-                  {joinedUserList?.length > 0 ? (
+                  {uniqueUsers?.length > 0 ? (
                     <ul className="flex flex-col gap-2 my-5">
-                      {joinedUserList?.map((user: any) => (
+                      {uniqueUsers?.map((user: any, ind: number) => (
                         <li
-                          key={user?.userId}
+                          key={user?.userId + ind}
                           className="flex items-center justify-between gap-2 bg-gray-50 p-3 cursor-pointer border"
                         >
                           <div className="flex items-center gap-2">
                             <div className="avatar w-12 h-12 border rounded-full grid place-items-center font-bold">
-                              {user?.yourName?.slice(0, 1)}
+                              {user?.name?.slice(0, 1)}
                             </div>
 
                             <div className="flex flex-col items-start">
                               <span className="text-lg font-bold">
-                                {user?.yourName}
+                                {user?.name}
                               </span>
                               <small>{user.userId}</small>
                             </div>
                           </div>
-                          {user?.senderId === room?.senderId && (
+                          {/*  {user?.userId === room?.userId && (
                             <span className="text-xs bg-green-100 text-green-500 p-1 px-3 rounded-full">
                               Creator
                             </span>
-                          )}
+                          )} */}
                         </li>
                       ))}
                     </ul>
@@ -232,7 +244,12 @@ const Messages = (props: Props) => {
               </div>
 
               {isJoin && (
-                <MessageBody room={roomId} socket={socket} name={yourName} />
+                <MessageBody
+                  room={roomId}
+                  socket={socket}
+                  name={yourName}
+                  setJoinedUserList={setJoinedUserList}
+                />
               )}
             </div>
           </div>

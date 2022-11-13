@@ -10,15 +10,17 @@ type Props = {
   room: string;
   socket: any;
   name: string;
+  setJoinedUserList: (value: any) => void;
 };
-const MessageBody = ({ room, socket, name }: Props) => {
+const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [messageList, setMessageList] = useState<any>([]);
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-  /* microphone */
+  const [joinSomeone, setJoinSomeone] = useState<any>({});
+  const [leaveSomeone, setLeaveSomeone] = useState<any>({});
 
   /* send message */
   const sendMessage = async (e: any) => {
@@ -45,7 +47,7 @@ const MessageBody = ({ room, socket, name }: Props) => {
 
   /* handle voice message */
   const handleVoiceMessage = () => {
-    cogoToast.warn("Voice message not implemented yet");
+    cogoToast.info("Voice message is not supported yet");
   };
 
   /* handle message list */
@@ -53,14 +55,44 @@ const MessageBody = ({ room, socket, name }: Props) => {
     socket.on("receive_message", (data: any) => {
       setMessageList((prev: any) => [...prev, data]);
     });
+
+    socket.on("notify_joined", (data: any) => {
+      if (data) {
+        setJoinedUserList((prev: any) => [...prev, data]);
+        setJoinSomeone({
+          name: data.name,
+          room: data.roomId,
+        });
+        setTimeout(() => {
+          setJoinSomeone({});
+        }, 10000);
+      }
+    });
+
+    socket.on("notify_left", (data: any) => {
+      if (data?.roomId) {
+        setJoinedUserList((prev: any) =>
+          prev.filter((user: any) => user.userId !== data.userId)
+        );
+        setLeaveSomeone({
+          name: data?.name,
+          roomId: data?.roomId,
+        });
+        setTimeout(() => {
+          setLeaveSomeone({});
+        }, 10000);
+      }
+    });
+
     return () => {
       socket.off("receive_message");
       setMessageList([]);
+      setJoinedUserList([]);
     };
-  }, [socket]);
+  }, [socket, setJoinedUserList]);
 
   return (
-    <div className="sm:col-span-3 order-1 sm:order-3">
+    <div className="md:col-span-3 order-1 md:order-3">
       <div className="message-body border shadow bg-white rounded-lg overflow-hidden">
         <div className="message-body__header flex items-center justify-between bg-gray-50 border p-4">
           <div className="message-body__header__left flex items-center gap-3">
@@ -82,9 +114,9 @@ const MessageBody = ({ room, socket, name }: Props) => {
           </div>
         </div>
 
-        <div className="message-body__body p-3 sm:p-6 h-[35rem] overflow-y-scroll">
+        <div className="message-body__body p-3 sm:p-6 h-[35rem] overflow-y-scroll relative">
           {/* message pack */}
-          <ScrollToBottom className="message-container ">
+          <ScrollToBottom className="message-container relative">
             <div
               className={`message-body__body__message flex items-center gap-1 receiver relative px-5 mb-3 flex-row-reverse `}
             >
@@ -144,6 +176,17 @@ const MessageBody = ({ room, socket, name }: Props) => {
                 </small>
               </div>
             ))}
+
+            {joinSomeone?.room && (
+              <small className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-blue-100 p-1 px-3 rounded-full text-blue-500 text-xs">
+                <b>{joinSomeone?.name}</b> joined to this room
+              </small>
+            )}
+            {leaveSomeone?.roomId && (
+              <small className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-red-100 p-1 px-3 rounded-full text-red-500 text-xs">
+                <b>{leaveSomeone?.name}</b> left this room
+              </small>
+            )}
           </ScrollToBottom>
         </div>
         <div className="message-body__footer bg-gray-50 flex items-stretch justify-between p-3 relative">

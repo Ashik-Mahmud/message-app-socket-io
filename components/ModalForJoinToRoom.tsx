@@ -2,10 +2,11 @@ import cogoToast from "cogo-toast";
 import Router from "next/router";
 import { useState } from "react";
 import { io } from "socket.io-client";
+import { serverUrl } from "../config/config";
 import { setRoom, setUsers } from "../features/RoomSlice";
 import { useAppDispatch } from "../store/store";
 
-const socket = io("https://message-app-soket-io.onrender.com");
+const socket = io(serverUrl);
 
 type Props = {
   setIsModalOpen: (value: boolean) => void;
