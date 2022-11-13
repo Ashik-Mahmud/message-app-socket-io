@@ -16,7 +16,10 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [messageList, setMessageList] = useState<any>([]);
-  const [typing, setTyping] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>({
+    name: "",
+    message: "",
+  });
   const [isTyping, setIsTyping] = useState(false);
 
   const [joinSomeone, setJoinSomeone] = useState<any>({});
@@ -63,6 +66,14 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
 
   /* handle message list */
   useEffect(() => {
+    /* welcome message */
+    socket.on("welcome_message", (data: any) => {
+      setUserInfo({
+        name: data.name,
+        message: data.message,
+      });
+    });
+    /* receive message */
     socket.on("receive_message", (data: any) => {
       setMessageList((prev: any) => [...prev, data]);
     });
@@ -148,7 +159,7 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
               <p
                 className={`text-sm inline-block p-3 rounded-lg overflow-hidden bg-blue-400 text-white `}
               >
-                Welcome to the group chat
+                Hey! <b>{userInfo.name + " "}</b> {userInfo.message}
               </p>
               <small className="ml-3">
                 <span className="text-gray-400">{"Admin"}</span>
@@ -243,7 +254,6 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onInput={() => handleTypingIndicator()}
-                onBlur={() => setTyping(false)}
               />
 
               <div

@@ -229,11 +229,6 @@ const Messages = (props: Props) => {
                               <small>{user.userId}</small>
                             </div>
                           </div>
-                          {/*  {user?.userId === room?.userId && (
-                            <span className="text-xs bg-green-100 text-green-500 p-1 px-3 rounded-full">
-                              Creator
-                            </span>
-                          )} */}
                         </li>
                       ))}
                     </ul>
