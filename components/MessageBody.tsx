@@ -1,11 +1,11 @@
 import cogoToast from "cogo-toast";
 import EmojiPicker from "emoji-picker-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AiOutlinePaperClip, AiOutlineSend } from "react-icons/ai";
 import { BiX } from "react-icons/bi";
 import { FaEllipsisV, FaMicrophone, FaSmile } from "react-icons/fa";
 import ScrollToBottom from "react-scroll-to-bottom";
-
 type Props = {
   room: string;
   socket: any;
@@ -50,6 +50,17 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
     cogoToast.info("Voice message is not supported yet");
   };
 
+  /* handle typing indicator */
+  const handleTypingIndicator = async () => {
+    await socket.emit("typing", room);
+  };
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsTyping(false);
+    }, 1000);
+  }, [isTyping]);
+
   /* handle message list */
   useEffect(() => {
     socket.on("receive_message", (data: any) => {
@@ -84,6 +95,11 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
       }
     });
 
+    /* is typing indicator */
+    socket.on("isTyping", async (data: any) => {
+      setIsTyping(data?.isTyping);
+    });
+
     return () => {
       socket.off("receive_message");
       setMessageList([]);
@@ -105,7 +121,6 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
               <h3>{"Group Live Chat"}</h3>
               <p className="text-xs text-gray-400">Active 1 hour ago</p>
             </div>
-            {typing && <p className="text-xs text-gray-400">typing...</p>}
           </div>
           <div className="message-body__header__right ">
             <div className="message-body__header__right__icon cursor-pointer">
@@ -176,7 +191,16 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
                 </small>
               </div>
             ))}
-
+            {isTyping && (
+              <div className="indicator">
+                <Image
+                  src="https://media.tenor.com/vXnmG74PsvUAAAAM/oop-tehe.gif"
+                  width={50}
+                  height={50}
+                  alt="Indicator"
+                />
+              </div>
+            )}
             {joinSomeone?.room && (
               <small className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-blue-100 p-1 px-3 rounded-full text-blue-500 text-xs">
                 <b>{joinSomeone?.name}</b> joined to this room
@@ -218,9 +242,7 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
                 className="w-full border border-l-0  p-3 outline-none "
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onInput={() => {
-                  socket.emit("typing", { author: "Admin" });
-                }}
+                onInput={() => handleTypingIndicator()}
                 onBlur={() => setTyping(false)}
               />
 
