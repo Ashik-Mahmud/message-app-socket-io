@@ -61,7 +61,7 @@ const MessageBody = ({ room, socket, name, setJoinedUserList }: Props) => {
   useEffect(() => {
     setTimeout(() => {
       setIsTyping(false);
-    }, 1000);
+    }, 2000);
   }, [isTyping]);
 
   /* handle message list */
